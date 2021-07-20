@@ -1,0 +1,643 @@
+\documentclass{article}
+
+\usepackage{hyperref}
+
+\title{viRome: an R package for the visualization and analysis of viral small RNA sequence datasets}
+\author{Mick Watson}
+
+\begin{document}
+
+\maketitle
+
+We have developed code in R to analyse short-read next-generation sequencing data from virus-infection studies where the siRNA or piRNA pathways have been implicated.  The package provides a range of functions to help scientists visualise the results of such experiments.
+
+viRome takes aligned data (in the form of a sorted, indexed BAM file) and produces a variety of graphs and reports.
+
+viRome is completely open source and is available on Sourceforge: \url{http://sourceforge.net/projects/virome}
+
+
+\section{Computing requirements}
+
+The role of viRome is to summarise and plot millions of data points - you will therefore likely need a powerful computer.  The package should work on standard desktops and laptops, but may take longer than expected. viRome was developed on machines with large amounts of RAM and significant processing power. 
+
+The tutorial below takes approximately 30 minutes on a 64 bit Windows PC with 24Gb of RAM and a dual-core 2.4GHz processor.  If you find that the tutorial takes significantly longer, then please use a PC with more RAM and/or a faster processor.
+
+
+\section{Download and install R and necessary packages}
+
+You will need R: navigate to \url{http://www.r-project.org} and download and install the latest version of R for your operating system
+
+The next step is to ensure we have all the dependencies installed.  You only need to run this once:
+
+<<>>=
+# get the necessary Bioconductor packages
+# source("http://www.bioconductor.org/biocLite.R")
+# biocLite("Rsamtools")
+
+# install optional Bioconductor packages
+# biocLite("seqLogo")
+# biocLite("motifStack")
+
+# install the necessary R packages
+# install.packages(c("plyr","gsubfn","seqinr","reshape2"))
+
+# install optional R packages
+# install.packages("ggplot2")
+@
+
+All of the above options are commented out; please uncomment and run the commands above as needed, depending on your existing environment i.e. if you already have Rsamtools installed, there is no need to install it again.
+
+\section{Install the viRome package}
+
+Next install and load the viRome package from: \url{http://sourceforge.net/projects/virome}
+
+\begin{itemize}
+\item On windows download the .zip file and install via the menu option Packages -> Install packages from local zip files
+\item For linux and Mac, download the .tar.gz file from http://sourceforge.net/projects/virome.  Install via R CMD INSTALL
+\end{itemize}
+
+\section{Example data}
+
+The data we are using is from:
+
+\begin{itemize}
+\item Vodovar N, Bronkhorst AW, van Cleef KW, Miesen P, Blanc H, van Rij RP, Saleh MC. (2012) Arbovirus-derived piRNAs exhibit a ping-pong signature in mosquito cells. PLoS One. 7(1):e30861. doi: 10.1371/journal.pone.0030861. 
+\end{itemize}
+
+The data are in the SRA here: \url{http://www.ncbi.nlm.nih.gov/sra?term=SRR389184}
+
+We have distributed aligned data from this study with the viRome package - the data were aligned to the Sindbis virus genome using Novoalign (\url{http://www.novocraft.com}).  We recommend that you use BAM files that are sorted according to genomic location, and indexed.  This can be carried out using samtools (\url{http://samtools.sourceforge.net/})
+
+\section{Minimal commands}
+
+Each function in viRome has a number of parameters, and all of these paramters have default values.  In order to read about these parameters, and to see their default values, please access the help for wach function:
+
+<<>>=
+?read.bam
+?clip.bam
+?barplot.bam
+?size.strand.bias.plot
+?summarise.by.length
+?size.position.heatmap
+?stacked.barplot
+?position.barplot
+?sequence.report
+?make.pwm
+?pwm.heatmap
+?read.dist.plot
+@
+
+However, as we have already set the defaults, there are minimal commands which will create plots based on those defaults.  The mimimum information required is the data that the command must read to summarise and create a plot, and this is typically given as the first argument to the function.  Examples of these minimal commands, and the type of data they reuire, is below:
+
+<<>>=
+# load the library
+# find example data
+library(viRome)
+infile <- system.file("data/SRR389184_vs_SINV_sorted.bam", package="viRome")
+
+# minimal commands
+
+# requires the full path to a bam file, 
+# and the name of the reference the data are aligned to
+bam    <- read.bam(infile, chr="SINV") 
+
+# requires only the output of read.bam()
+bamc   <- clip.bam(bam)  
+
+# requires only the output of clip.bam()              
+bpl    <- barplot.bam(bamc)            
+
+# requires only the output of barplot.bam()
+ssp    <- size.strand.bias.plot(bpl)   
+
+# requires only the output of clip.bam()
+dm     <- summarise.by.length(bamc)    
+
+# requires only the output of summarise.by.length()
+sph    <- size.position.heatmap(dm)    
+
+# requires only the output of summarise.by.length()
+sbp    <- stacked.barplot(dm)          
+
+# requires only the output of clip.bam()
+# though one should alter minlen, maxlen 
+# and reflen
+sir    <- position.barplot(bamc)       
+              
+# requires only the output of clip.bam()                         
+sr     <- sequence.report(bamc)        
+
+# requires only the output of clip.bam()
+pwm    <- make.pwm(bamc)               
+
+# requires only the output of make.pwm()
+pmh    <- pwm.heatmap(pwm)             
+
+# requires only the output of sequence.report()
+rdp    <- read.dist.plot(sr)           
+@
+
+So those are the minimal commands, and every other paramter has default values.  We encourage you to read the help files to learn about these parameters in more detail.
+
+\section{Load data}
+
+We load data into R by using the load.bam function.  This function takes a number of parameters.  We first load the package, then locate an example BAM file that is distributed with viRome, and read in the data:
+
+<<>>=
+library(viRome)
+infile <- system.file("data/SRR389184_vs_SINV_sorted.bam", package="viRome")
+bam    <- read.bam(bamfile = infile, chr = "SINV", start = 1, end = 11703,
+                   what = c("qname", "flag", "rname", "strand", 
+			    "pos", "qwidth", "mapq", "cigar", "mrnm", 
+                            "mpos", "isize", "seq"),
+                   tag = c("NM"), removeN = TRUE)
+@
+
+To see documentation for all of the parameters to read.bam, access the help for the function:
+
+<<>>=
+?read.bam
+@
+
+The parameters we provide to read.bam are:
+
+\begin{itemize}
+\item    bamfile: location of the target BAM file on disk
+\item     chr: the name of the reference within the BAM file.  We can only load data from one reference at a time
+\item     start: the minimum base within the reference to load alignments from
+\item     end: the maximum base within the reference to load alignments from
+\item     what: the fields to load.  read.bam uses Rsamtools to load the data, see ?scanBam for an explanation of these fields
+\item     tag: the names of tags within the BAM file to load
+\item     removeN: whether or not to remove sequences that contain N's
+\end{itemize}
+
+We then simply need to deal with any soft- and hard- clipping that has been applied to the reads by the aligner, and calculate some statistics about it:
+
+<<>>=
+bamc <- clip.bam(bam)
+@
+
+To find out exactly what clip.bam does, you can read the help:
+
+<<>>=
+?clip.bam
+@
+
+However, here is an excerpt:
+
+\begin{itemize}
+\item Aligned sequences are stored in BAM files with the caveat that they may have been soft-clipped - i.e. the clipped sequence was not used in the alignment, but is included in the BAM file. This function looks at the CIGAR string and clips data in the "seq" column appropriately. For example, consider the CIGAR string "12S25M" and the sequence read "CACCCGAGAATACCCCAGAACCATTATGCTGTGACTT". The sequence read is 37bp long; however, the cigar string tells us that only 25 "matched" (25M) i.e. only 25 were used in the alignment. The CIGAR string also tells us that 12bp were soft-clipped (12S). We can tell that they were soft-clipped from the start of the read as 12S occurs before 25M
+\end{itemize}
+
+Therefore, clip.bam parses the CIGAR string for every read, and calculates mapping statistics based on the information.
+
+\section{Distribution of mapped read-lengths}
+
+Once the BAM file has been read into viRome, the first stage of any analysis is to look at the distribution of read lengths mapped to the genome.  A peak at 21-22bp may indicate a siRNA response, and a peak at 25-29bp may inidcate a piRNA response:
+
+<<>>=
+b <- barplot.bam(vdf = bamc, minlen = 1, maxlen = 37, 
+                 poscol="red", negcol="green",
+                 main = "Sequence length distribution", 
+                 xlab = "Map length", ylab = "Count",
+                 legend = c("+ve strand", "-ve strand"),
+                 legendx = NULL, legendy = NULL)
+@
+
+<<label=fig1, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+b <- barplot.bam(vdf = bamc, minlen = 1, maxlen = 37, poscol="red", negcol="green",
+                 main = "Sequence length distribution", xlab = "Map length", ylab = "Count",
+                 legend = c("+ve strand", "-ve strand"),
+                 legendx = NULL, legendy = NULL)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig1}
+\end{center}
+
+A feature of viRome is that many of the plotting functions also return the data to the user:
+
+<<>>=
+b
+@
+
+
+One of the advantages of this is you may wish to plot the data using a different package.
+
+We can also make the plot look a bit nicer using options built into viRome:
+
+<<>>=
+b <- barplot.bam(vdf = bamc, minlen = 17, maxlen = 37, 
+		 poscol="blue", negcol="yellow",
+                 main = "Sequence length distribution", 
+		 xlab = "Map length", ylab = "Count",
+                 legend = c("+ve strand", "-ve strand"),
+                 legendx = 17, legendy = NULL, down=TRUE, 
+		 space=c(0,0))
+@
+
+We have changed the colour scheme, and made the counts on the negative strand point downwards:
+
+<<label=fig3, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+b <- barplot.bam(vdf = bamc, minlen = 17, maxlen = 37, 
+		 poscol="blue", negcol="yellow",
+                 main = "Sequence length distribution", 
+		 xlab = "Map length", ylab = "Count",
+                 legend = c("+ve strand", "-ve strand"),
+                 legendx = 17, legendy = NULL, down=TRUE, 
+		 space=c(0,0))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig3}
+\end{center}
+
+From inspecting this image we can see a number of patterns in the data
+
+\begin{itemize}
+\item    There is a peak at 21bp, suggesting a siRNA response
+\item    There is also a peak betwen 25-29bp, suggesting a piRNA response
+\item    The number of reads on the positive and negative strands for 21bp reads appears equal
+\item    There appear to be more 25-29bp reads on the positive strand compared to the negative strand
+\end{itemize}
+
+We can further visualise a potential strand bias using the size.strand.bias.plot function:
+
+<<>>=
+size.strand.bias.plot(b, mar=c(4,4,3,1), pch=".", tpos=3, cextxt=0.8)
+@
+
+Here we provide the function with "b", the output of the barplot.bam function.  We also set some additional plotting parameters, and we end up with this:
+
+<<label=fig4, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+size.strand.bias.plot(b, mar=c(4,4,3,1), pch=".", tpos=3, cextxt=0.8)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig4}
+\end{center}
+
+This is an XY-scatterplot of counts on the positive and negative strand for each read-length.  The red line indicates y=x.  We can see that for read lengths 26, 27, 28 and 29 there is a bias towards the positive strand.
+
+\section{Position of reads mapped to the genome: heatmaps}
+
+So, from the above analysis we have evidence that there is both an siRNA and a piRNA response in this sample.  We also have a suggestion that there may be a strand bias in the 25-29bp reads. 
+
+The next stage is to analyse where the reads are mapping in the genome.  We will first take a global view and look at all read lengths and all positions in the reference.
+
+To do this, we must count the occurrence of each read length at each position in the genome.  The function we use to do this is called summarise.by.length.  This function requires a lot of RAM and processing power.  However, on the windows PC specified above, these commands take approximately 20 seconds:
+
+<<>>=
+dm <- summarise.by.length(bamc)
+dmp <- summarise.by.length(bamc, strand="pos")
+dmn <- summarise.by.length(bamc, strand="neg")
+@
+
+First, we cound occurrence for both strands, and store those counts in a variable called "dm".  We then calculate similar summaries, but this time limit to the positive and negative strands respectably.
+
+This will return a data matrix, the rows of which are genomic positions, the columns of which are read lengths and the values of which are counts:
+
+<<>>=
+dm[1:10,2:19]
+@
+
+We can now use these in a range of plotting functions.
+
+The first function we will use is size.position.heatmap:
+
+<<>>=
+size.position.heatmap(dm, mar=c(3,3,2,1))
+@
+
+This draws a heatmap, with read lengths as rows and genomic position as columns.  With default parameters, the data are scaled for each genomic position:
+
+<<label=fig5, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=4>>=
+size.position.heatmap(dm, mar=c(3,3,2,1))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig5}
+\end{center}
+
+From this we can see the distribution of read lengths mapped throughout the genome.  We can see hot-spots for each read length, and there is a suggestion that the 21bp reads are more evenly distributed throughout the genome.  We can look at the data another way using additional options:
+
+<<>>=
+size.position.heatmap(dm, scale=FALSE, log=TRUE, mar=c(3,3,2,1))
+@
+
+With these parameters, we are telling the function to log the data (this helps with scale), not to use R's in-built scale function and to adjust the plotting margins.  The command produces:
+
+<<label=fig6, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=4>>=
+size.position.heatmap(dm, scale=FALSE, log=TRUE, mar=c(3,3,2,1))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig6}
+\end{center}
+
+As we have log transformed the data, and chosen not to scale it, we can begin to see additional patterns - specifically, we can see that there is a hotspot for 25-29bp reads around position 8000 in the genome.
+
+Both of these plots show counts for both strands - but what about strand bias?  Well, with the following commands we can use split.screen() to compare counts for both strands with those for the positive and negative strands:
+
+
+<<>>=
+split.screen(c(3,1))
+screen(1)
+size.position.heatmap(dm, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Both")
+screen(2)
+size.position.heatmap(dmp, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Pos")
+screen(3)
+size.position.heatmap(dmn, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Neg")
+close.screen(all=TRUE)
+@
+
+Here we are using split.screen to create a plot with three graphics as 3 rows and 1 column.  We then plot data for both strands at the top, the positive strand in the middle and the negative strand at the bottom:
+
+<<label=fig7, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=7>>=
+split.screen(c(3,1))
+screen(1)
+size.position.heatmap(dm, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Both")
+screen(2)
+size.position.heatmap(dmp, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Pos")
+screen(3)
+size.position.heatmap(dmn, log=TRUE, scale=FALSE, mar=c(2,2,2,1), main="Neg")
+close.screen(all=TRUE)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig7}
+\end{center}
+
+This image indicates yet another pattern - not only does there appear to be a peak of 25-29bp matches around position 8000, but it also appears to be more prominent on the positive strand.
+
+\section{Position of reads mapped to the genome: barplots}
+
+Using the data we calculated above, we can also examine the distribution of reads using barplots.  The first function we will use looks at all reads across all positions, and plots a barplot for each read length:
+
+<<>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), skip.x=4, main.adj=0.5)
+@
+
+This command takes "dm", which includes counts for both strands and creates a stacked barplot.  We use parameters to adjust the plotting margins, to adjust the size of the title for each plot and to only plot an x-axis every 4 plots:
+
+<<label=fig8, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=12>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), skip.x=4, main.adj=0.5)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig8}
+\end{center}
+
+The default colour scheme here is "rainbow", which can be difficult to see.  We can change this:
+
+<<>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), skip.x=4, 
+		main.adj=0.5, 
+		col.fun=colorRampPalette(c("green", "red"), 
+			space = "rgb"))
+@
+
+<<label=fig9, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=12>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), skip.x=4, 
+		main.adj=0.5, 
+		col.fun=colorRampPalette(c("green", "red"), 
+			space = "rgb"))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig9}
+\end{center}
+
+Here again we can see the pattern that 21 and 22bp reads seem to be distributed throughout the genome, but that 25-29bp reads are a bit more localised, with a particularly large peak around position 8000.
+
+As of version 0.7, we have added two new parameters to stacked.barplot.  The first, bicol, allows the user to provide a vector of two colours, and those colours will be used for alternate graphs:
+
+<<>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), 
+		skip.x=4, main.adj=0.5, 
+		bicol=c("red","black"))
+@
+
+<<label=fig18, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=12>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), 
+		skip.x=4, main.adj=0.5, 
+		bicol=c("red","black"))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig18}
+\end{center}
+
+The second, samey, forces stacked.barplot to create the same Y-axis for each of the stacked barplot (by default, each has its own):
+
+<<>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), 
+		skip.x=4, main.adj=0.5, 
+		samey=TRUE)
+@
+
+<<label=fig19, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=12>>=
+stacked.barplot(dm, internal.margins=c(0,2,0,1), 
+		skip.x=4, main.adj=0.5, 
+		samey=TRUE)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig19}
+\end{center}
+
+As can be seen above, due to the predominance of the longer reads, the bars for the shorter reads do not appear - however, this plot accurately relays that information.
+
+It's now time to focus in on specific patterns in the 21-22bp (siRNA) and 25-29bp (piRNA) data.
+
+\section{Genomic position of 21-22bp reads}
+
+The above plots are great for looking at global patterns, but we can now focus in on particular subsets of reads.  For example, to look at the genomic position of the 21-22bp reads (siRNA response):
+
+<<>>=
+sirna <- position.barplot(vdf = bamc, minlen = 21, 
+			  maxlen = 22, reflen = 11703, 
+			  samp = "SRR389184")
+@
+
+This function takes the output of clip.bam, filters on reads longer than minlen and shorter than maxlen and produces a barplot:
+
+<<label=fig10, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+sirna <- position.barplot(vdf = bamc, minlen = 21, 
+			  maxlen = 22, reflen = 11703, 
+			  samp = "SRR389184")
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig10}
+\end{center}
+
+Using this image we can get a far more accurate picture of where in the genome the 21-22bp reads are mapping, and where hotspots exist.
+
+As with the barplot.bam function, here the data are returned should you wish to plot the data using another function:
+
+<<>>=
+sirna[1:20,]
+@
+
+\section{Genomic position of 25-29bp reads}
+
+We can also use the same function to look at 25-29bp reads (the piRNA response):
+
+<<>>=
+pirna <- position.barplot(vdf = bamc, minlen = 25, 
+			  maxlen = 29, reflen = 11703, 
+			  samp = "SRR389184")
+@
+
+<<label=fig11, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+pirna <- position.barplot(vdf = bamc, minlen = 25, 
+			  maxlen = 29, reflen = 11703, 
+			  samp = "SRR389184")
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig11}
+\end{center}
+
+In contrast to the 21-22bp reads, we see far clearer localisation of the 25-29bp reads, specifically:
+
+\begin{itemize}
+\item    A large peak on the positive strand around position 8000
+\item    The above peak is mostly concentrated on the psoitive strand
+\item    A smaller peak just after around position 2100, again focused on the positive strand
+\item    A large stretch in the middle of the genome with very few 25-29bp reads
+\end{itemize}
+
+At this stage this is an explanatory analysis - we make no attempt to interpret these patterns.  The purpose of viRome is merely to find and present those patterns.  Differences in read lengths, position in the genome and biases in the strand may be due to issues with the sequencing technology used, or indeed the software used to map the data.  These options should be eliminated before interpreting the data in terms of a biological phenomenon.
+
+However, we can speculate from these graphs that, whilst the siRNA response seems to occur throughout the genome, the piRNA response appears more localised, and we can design experiments to attempt to confirm these hypotheses.
+
+\section{Generating a sequence report}
+
+The SAM/BAM format is well known to bioinformaticians, however, often we need to summarise and count each individual sequence and where it maps.  This is done using the sequence.report function:
+
+<<>>=
+sr <- sequence.report(bamc, minlen=1, maxlen=37)
+@
+
+Again, the function can be used to look at all reads, or be limited to subsets.  An example of the report is below:
+
+<<>>=
+sr[1:10,]
+@
+
+This can be exported to csv format using write.csv, and opened in Excel.
+
+\section{Base composition}
+
+Research has shown that RNAs within the piRNA pathway often show a U1(T1) and A10 bias - that is, far more often than you would expect by chance, piRNAs have a U/T at the first base and an A at the tenth base. 
+
+NOTE some users have pointed out that we should be showing U instead of T (as we are representing RNA).  However, we disagree.  It is a technicality, but we have not actually measured RNA, we have measured the cDNA form of that RNA.  As far as we know, the Helicos system is the only system to directly sequence RNA, all other systems (including the Illumina/Solexa system used in this data) converts RNA to DNA first.  As we have measured DNA, we show T and not U.
+
+Relative frequencies of the four bases can be calculated using the make.pwm function:
+
+<<>>=
+pwm1 <- make.pwm(bamc, minlen=25, maxlen=29, strand="neg")
+pwm2 <- make.pwm(bamc, minlen=25, maxlen=29)
+@
+
+This function takes the output of clip.bam, limits to reads within a certain range, and calculates counts based on reads mapping to the positive (default) or negative strand.
+
+The data returned are pretty self explanatory - rows are bases, columns are positions and the values are relative proportions:
+
+<<>>=
+pwm1[,1:8]
+@
+
+
+We can visualise these in a number of ways.  Firstly, using the viRome function pwm.heatmap:
+
+<<>>=
+pwm.heatmap(pwm1, col.fun=colorRampPalette(c("green","red"), space="rgb"))
+@
+
+<<label=fig12, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=4>>=
+pwm.heatmap(pwm1, col.fun=colorRampPalette(c("green","red"), space="rgb"))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig12}
+\end{center}
+
+<<>>=
+pwm.heatmap(pwm2, col.fun=colorRampPalette(c("green","red"), space="rgb"))
+@
+
+<<label=fig13, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=4>>=
+pwm.heatmap(pwm2, col.fun=colorRampPalette(c("green","red"), space="rgb"))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig13}
+\end{center}
+
+Using a green-to-red colour scheme, we can clearly see the T1 and A10 biases.
+
+We can also visualise the data as sequence logos, using the (third party) seqLogo package:
+
+<<>>=
+library(seqLogo) # must have this installed!
+seqLogo(pwm1)
+@
+
+<<label=fig14, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+library(seqLogo) # must have this installed!
+seqLogo(pwm1)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig14}
+\end{center}
+
+<<>>=
+library(seqLogo) # must have this installed!
+seqLogo(pwm2)
+@
+
+<<label=fig15, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+library(seqLogo) # must have this installed!
+seqLogo(pwm2)
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig15}
+\end{center}
+
+	
+Of course, it also possible to use the humble barplot function to more accurately visualise the proportions:
+
+<<>>=
+barplot(pwm1, col=rainbow(4), legend.text=rownames(pwm1), 
+	args.legend=list(x=39), xlim=c(0,45))
+@
+
+<<label=fig16, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+barplot(pwm1, col=rainbow(4), legend.text=rownames(pwm1), 
+	args.legend=list(x=39), xlim=c(0,45))
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig16}
+\end{center}
+
+\section{5' read-distance plots}
+
+Finally, we plot the distance between the 5' ends of overlapping reads on opposite strands.  A peak at 10bp has been shown to be a signature of the piRNA response.  The read.dist.plot function takes every read mapped to a given strand and within a given size range, counts the frequency of that read, and then counts the frequency of reads mapping to every location on the opposite strand within a given window.  A range of summary functions are offered by the function.  Despite the report of this 10bp distance in the literature, this paper represents the first full and accurate description of how the data may be summarized and plotted, and viRome represents the first software implementation.
+
+<<>>=
+rdp <- read.dist.plot(sr, minlen=25, maxlen=29, method="add")
+@
+
+<<label=fig17, fig=TRUE, echo=FALSE, include=FALSE, width=7, height=5>>=
+rdp <- read.dist.plot(sr, minlen=25, maxlen=29, method="add")
+@
+\begin{center}
+\includegraphics[width=1.0\textwidth]{viRome-fig17}
+\end{center}
+
+Again, the data are returned to the user, so if you choose to you can plot the data using a different package/function.
+
+<<>>=
+rdp
+@
+
+\section{Closing comments}
+And there we have it!
+
+viRome is under active development and a manuscript is under review.  Please check back regularly for updates.
+
+Comments, suggestions etc to mick.watson@roslin.ed.ac.uk
+
+\url{http://www.ark-genomics.org/services-bioinformatics/virome}
+
+\end{document}
+

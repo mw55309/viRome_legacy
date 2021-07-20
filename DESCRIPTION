@@ -1,0 +1,14 @@
+Package: viRome
+Type: Package
+Title: Analysis and visualisation of short-read sequencing data from
+        virus-infection studies
+Version: 0.10
+Date: 2015-11-12
+Author: Mick Watson
+Maintainer: Mick Watson <mick.watson@roslin.ed.ac.uk>
+Depends: seqinr, plyr, gsubfn, Rsamtools, reshape2
+Suggests: seqLogo, motifStack
+Imports: S4Vectors
+Description: During infection with a variety of viruses, host cells often raise a siRNA (~21bp) or piRNA (24-29bp) response.  The viRome package takes aligned data from a bam file and allows users to visualise and analyse the data in a number of ways
+License: BSD
+Packaged: 2015-11-12 10:39:36 UTC; mwatson9

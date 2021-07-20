@@ -1,0 +1,13 @@
+exportPattern("^[[:alpha:]]+")
+importClassesFrom(IRanges, Ranges, RangesList, RangedData)
+importClassesFrom(S4Vectors, DataFrame)
+importMethodsFrom(IRanges, append, as.matrix, as.vector,
+                  as.data.frame, countOverlaps, elementLengths, end, findOverlaps,
+                  follow, gsub, lapply, match, narrow, order,
+                  precede, queryHits, rev, shift,
+                  start, "start<-", subjectHits, 
+                  unique, unlist, values, "values<-", which, width)
+importFrom(IRanges, CharacterList, IRanges,
+           PartitioningByWidth, successiveViews)
+importFrom(S4Vectors, DataFrame, isSingleString)
+
