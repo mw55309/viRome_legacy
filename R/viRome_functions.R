@@ -463,7 +463,7 @@ read.bam <- function (bamfile = NULL, chr = NULL, start = 1, end = 1e+07, what =
     } else {
 	# otherwise limit the data by chromosome and the
 	# given start and end
-    	which <- RangesList(chr = IRanges(start, end))
+    	which <- IRangesList(chr = IRanges(start, end))
     	names(which) <- chr
     	param <- ScanBamParam(which = which, what = what, tag = tag)
     	bam <- scanBam(bamfile, param = param)
