@@ -1,5 +1,4 @@
-barplot.bam <- function(vdf=NULL, minlen=1, maxlen=37, poscol="red", negcol="green", main="Sequence length distribution",
-				xlab="Map length", ylab="Count", legend=c("+ve strand","-ve strand"), legendx=NULL, legendy=NULL, plot=TRUE, down=FALSE, sym.axes=TRUE, ...) {
+barplot.bam <- function(vdf=NULL, minlen=1, maxlen=37, poscol="red", negcol="green", main="Sequence length distribution", xlab="Map length", ylab="Count", legend=c("+ve strand","-ve strand"), legendx=NULL, legendy=NULL, plot=TRUE, down=FALSE, sym.axes=TRUE, ...) {
 
 
 	# count frequencies in the negative strand
@@ -89,6 +88,7 @@ barplot.bam <- function(vdf=NULL, minlen=1, maxlen=37, poscol="red", negcol="gre
 	# return 
 	return(avdf[order(avdf$length),])
 }
+
 clip.bam <- function(vdf = NULL) {
 
 	# set up extra columns with null values
@@ -146,6 +146,8 @@ clip.bam <- function(vdf = NULL) {
 	return(vdf)
 
 }
+
+
 dna.complement <- function(x=NULL, reverse=TRUE) {
 
 	# convert the sequence to upper case
@@ -190,6 +192,8 @@ dna.complement <- function(x=NULL, reverse=TRUE) {
 	# return the sequence as a string
 	return(paste(cvec, sep="", collapse=""))
 }
+
+
 make.pwm <- function(vdf=NULL, minlen=1, maxlen=37, scaled=TRUE, strand="pos", revcom=FALSE, ttou=FALSE) {
 
 
@@ -284,6 +288,8 @@ make.pwm <- function(vdf=NULL, minlen=1, maxlen=37, scaled=TRUE, strand="pos", r
 	return(out)
 
 }
+
+
 make.simple.consensus <- function(vdf=NULL, reflen=12000) {
 
 	# create a vector for the consensus
@@ -340,6 +346,8 @@ make.simple.consensus <- function(vdf=NULL, reflen=12000) {
 	fas <- paste(cons, sep="", collapse="")
 	return(fas)
 }
+
+
 position.barplot <- function(vdf=NULL, minlen=1, maxlen=37, reflen=10000, samp="", plot=TRUE, poscol="red", negcol="green") {
 
 
@@ -424,6 +432,8 @@ position.barplot <- function(vdf=NULL, minlen=1, maxlen=37, reflen=10000, samp="
 	}
 
 }
+
+
 pwm.heatmap <- function(pwm=NULL, col.fun=colorRampPalette(c("black","red"), space="rgb"), mar=c(3,2,1,1), cex.axis=0.8) {
 
 	# set the margins
@@ -437,11 +447,10 @@ pwm.heatmap <- function(pwm=NULL, col.fun=colorRampPalette(c("black","red"), spa
 
 	# add axes
 	axis(side=1, at=1:ncol(pwm), labels=colnames(pwm), cex.axis=cex.axis)
-}read.bam <- function (bamfile = NULL, chr = NULL, start = 1, end = 1e+07, 
-    what = c("qname", "flag", "rname", "strand", "pos", "qwidth", 
-        "mapq", "cigar", "mrnm", "mpos", "isize", "seq"), tag = c("NM"), 
-    removeN = TRUE) 
-{
+}
+
+
+read.bam <- function (bamfile = NULL, chr = NULL, start = 1, end = 1e+07, what = c("qname", "flag", "rname", "strand", "pos", "qwidth", "mapq", "cigar", "mrnm", "mpos", "isize", "seq"), tag = c("NM"), removeN = TRUE) {
 
 
     # read the data using scanBam from Rsamtools() package
@@ -509,7 +518,9 @@ pwm.heatmap <- function(pwm=NULL, col.fun=colorRampPalette(c("black","red"), spa
 	} else {
 		do.call(c, x)
 	}
-}read.dist.plot <- function (sr = NULL, minlen = 1, maxlen = 37, method = "add", pad = 30, primary = "pos", plot=TRUE, title="5' read distance plot", xlab="Distance", ylab="Count") {
+}
+
+read.dist.plot <- function (sr = NULL, minlen = 1, maxlen = 37, method = "add", pad = 30, primary = "pos", plot=TRUE, title="5' read distance plot", xlab="Distance", ylab="Count") {
 
     # check the input paramters
     # check method argument is valid
@@ -653,6 +664,8 @@ pwm.heatmap <- function(pwm=NULL, col.fun=colorRampPalette(c("black","red"), spa
     # return the result
     return(du)
 }
+
+
 sequence.report <- function(df=NULL, minlen=1, maxlen=37) {
 
 	# filter the input according to the provided
@@ -675,6 +688,8 @@ sequence.report <- function(df=NULL, minlen=1, maxlen=37) {
 	# return
 	return(cts)
 }
+
+
 size.position.heatmap <- function(dm=NULL, minlen=1, maxlen=37, start=1, end=1e+07, scale=TRUE, col.fun=colorRampPalette(c("black","red"), space="rgb"), log=FALSE, mar=c(5,4,4,2), main=NULL) {
 	
 	# filter input columns
@@ -714,6 +729,8 @@ size.position.heatmap <- function(dm=NULL, minlen=1, maxlen=37, start=1, end=1e+
 
 }
 
+
+
 size.strand.bias.plot <- function(bp=NULL, minlen=1, maxlen=37, line.col="red", sym.axes=TRUE, title="Strand bias plot", xlab="+ strand counts", ylab="- strand counts", lty=1, lwd=2, cextxt=1, mar=c(5,4,4,1), tpos=1, ...) {
 
 	# limit the data according to user input
@@ -746,6 +763,8 @@ size.strand.bias.plot <- function(bp=NULL, minlen=1, maxlen=37, line.col="red", 
 
 
 }
+
+
 stacked.barplot <- function(dm=NULL, minlen=1, maxlen=37, start=1, end=1e+07, internal.margins=c(0,0,0,1), skip.x=2, bicol=NULL, col.fun=rainbow, axis.col="black", main.col="black", main.adj=1, samey=FALSE, ...) {
 
 	# filter input columns
@@ -813,7 +832,10 @@ stacked.barplot <- function(dm=NULL, minlen=1, maxlen=37, start=1, end=1e+07, in
 	# close the screens
 	close.screen(all=TRUE)
 
-}summarise.by.length <- function(vdf=NULL, minlen=1, maxlen=37, start=1, end=1e+07, strand=NULL) {
+}
+
+
+summarise.by.length <- function(vdf=NULL, minlen=1, maxlen=37, start=1, end=1e+07, strand=NULL) {
 
 	# sort out end which has been given
 	# a silly high default number so as not to miss
