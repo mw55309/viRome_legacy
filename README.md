@@ -1,40 +1,63 @@
 # viRome_legacy
 Legacy R code for the R package viRome DOI:10.1093/bioinformatics/btt297
 
-Legacy DESCRIPTION file:
+Install packages:
 
 ```sh
-Package: viRome
-Type: Package
-Title: Analysis and visualisation of short-read sequencing data from
-        virus-infection studies
-Version: 0.10
-Date: 2015-11-12
-Author: Mick Watson
-Maintainer: Mick Watson <mick.watson@roslin.ed.ac.uk>
-Depends: seqinr, plyr, gsubfn, Rsamtools, reshape2
-Suggests: seqLogo, motifStack
-Imports: S4Vectors
-Description: During infection with a variety of viruses, host cells often raise a siRNA (~21bp) or piRNA (24-29bp) response.  The viRome package takes aligned data from a bam file and allows users to visualise and analyse the data in a number of ways
-License: BSD
-Packaged: 2015-11-12 10:39:36 UTC; mwatson9
+install.packages(c("BiocManager","Rcpp","seqinr","plyr","gsubfn","Rsamtools","reshape2","seqLogo", "motifStack", "S4Vectors"))
+
+BiocManager::install("seqLogo")
+BiocManager::install("motifStack")
 ```
 
-Legacy NAMESPACE file:
+Load the libraries
 
 ```sh
-exportPattern("^[[:alpha:]]+")
-importClassesFrom(IRanges, Ranges, RangesList, RangedData)
-importClassesFrom(S4Vectors, DataFrame)
-importMethodsFrom(IRanges, append, as.matrix, as.vector,
-                  as.data.frame, countOverlaps, elementLengths, end, findOverlaps,
-                  follow, gsub, lapply, match, narrow, order,
-                  precede, queryHits, rev, shift,
-                  start, "start<-", subjectHits, 
-                  unique, unlist, values, "values<-", which, width)
-importFrom(IRanges, CharacterList, IRanges,
-           PartitioningByWidth, successiveViews)
-importFrom(S4Vectors, DataFrame, isSingleString)
-
+library("seqinr")
+library("plyr")
+library("gsubfn")
+library("Rsamtools")
+library("reshape2")
+library("seqLogo")
+library("motifStack")
+library("S4Vectors")
+library("Rcpp")
 ```
 
+Load the code
+```sh
+source("https://raw.githubusercontent.com/mw55309/viRome_legacy/main/R/viRome_functions.R")
+```
+
+There is a BAM file and associated .bai file called "SRR389184_vs_SINV_sorted.bam" in the data directory of this repo. Download them as examples
+
+Run viRome
+
+```sh
+infile <- "SRR389184_vs_SINV_sorted.bam"
+
+bam <- read.bam(infile, chr="SINV")
+# requires only the output of read.bam()
+bamc <- clip.bam(bam)
+# requires only the output of clip.bam()
+bpl <- barplot.bam(bamc)
+# requires only the output of barplot.bam()
+ssp <- size.strand.bias.plot(bpl)
+# requires only the output of clip.bam()
+dm <- summarise.by.length(bamc)
+sph <- size.position.heatmap(dm)
+# requires only the output of summarise.by.length()
+sbp <- stacked.barplot(dm)
+# requires only the output of clip.bam()
+# though one should alter minlen, maxlen
+# and reflen
+sir <- position.barplot(bamc)
+# requires only the output of clip.bam()
+sr <- sequence.report(bamc)
+# requires only the output of clip.bam()
+pwm <- make.pwm(bamc)
+# requires only the output of make.pwm()
+pmh <- pwm.heatmap(pwm)
+# requires only the output of sequence.report()
+rdp <- read.dist.plot(sr)
+```
